@@ -1,14 +1,9 @@
 const assert = require("assert");
-// import {getCurveFromName} from "../src/curves.js";
-// import {Polynomial} from "../src/polynomial/polynomial.js";
-// import {getRandomBuffer, getRandomValue} from "./test.utils.js";
+const { getCurveFromName } = require("ffjavascript");
+//const {Polynomial} = require("../src/polynomial/polynomial.js");
+//const { getRadomPolynomial} = require("./test.utils.js");
+
 const kzg_prove = require("../src/kzg_prove.js");
-
-// function radomPolynomial(maxDegree, curve) {
-//     const degree = getRandomValue(maxDegree);
-
-//     return new Polynomial(getRandomBuffer(degree + 1, curve.Fr), curve);
-// }
 
 const Logger = require("logplease");
 const logger = Logger.create("snarkJS", { showTimestamp: false });
@@ -17,19 +12,18 @@ Logger.setLogLevel("INFO");
 describe("grand-sums-study: KZG simple test", function () {
   this.timeout(500000);
 
-  // let curve;
-  // let sFr;
+  let curve;
 
-  // before(async () => {
-  //     curve = await getCurveFromName("bn128");
-  //     sFr = curve.Fr.n8;
-  // });
+  before(async () => {
+      curve = await getCurveFromName("bn128");
+  });
 
-  // after(async () => {
-  //     await curve.terminate();
-  // });
+  after(async () => {
+      await curve.terminate();
+  });
 
   it("should return the correct response", async () => {
+//    const pol = getRadomPolynomial()
     const ret = await kzg_prove("xxx", { logger });
     assert.equal(0, ret);
   });
