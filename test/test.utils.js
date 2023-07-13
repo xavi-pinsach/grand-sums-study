@@ -20,13 +20,11 @@ function getRandomBuffer(length, Fr) {
     return buffer;
 }
 
-function getRandomPolynomial(maxDegree, curve) {
-    const degree = getRandomValue(maxDegree);
-
-    return new Polynomial(getRandomBuffer(degree + 1, curve.Fr), curve);
+function getRandomPolynomialByLength(length, curve) {
+    return new Polynomial(getRandomBuffer(length, curve.Fr), curve);
 }
 
 module.exports.getRandomValue = getRandomValue;
 module.exports.getRandomArray =  getRandomArray;
 module.exports.getRandomBuffer =  getRandomBuffer;
-module.exports.getRandomPolynomial =  getRandomPolynomial;
+module.exports.getRandomPolynomialByLength =  getRandomPolynomialByLength;
