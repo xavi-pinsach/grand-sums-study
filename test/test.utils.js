@@ -1,7 +1,7 @@
 const { Polynomial } = require("../src/polynomial/polynomial.js");
 
 function getRandomValue(higher = 10) {
-    return Math.floor((Math.random() * higher) + 1);
+    return Math.floor(Math.random() * higher + 1);
 }
 
 function getRandomArray(length, Fr) {
@@ -25,6 +25,6 @@ function getRandomPolynomialByLength(length, curve) {
 }
 
 module.exports.getRandomValue = getRandomValue;
-module.exports.getRandomArray =  getRandomArray;
-module.exports.getRandomBuffer =  getRandomBuffer;
-module.exports.getRandomPolynomialByLength =  getRandomPolynomialByLength;
+module.exports.getRandomArray = getRandomArray;
+module.exports.getRandomBuffer = getRandomBuffer;
+module.exports.getRandomPolynomialByLength = getRandomPolynomialByLength;

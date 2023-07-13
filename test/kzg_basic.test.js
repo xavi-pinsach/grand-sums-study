@@ -11,23 +11,23 @@ const logger = Logger.create("", { showTimestamp: false });
 Logger.setLogLevel("INFO");
 
 describe("grand-sums-study: KZG simple test", function () {
-  this.timeout(500000);
+    this.timeout(500000);
 
-  let curve;
+    let curve;
 
-  before(async () => {
-    curve = await getCurveFromName("bn128");
-  });
+    before(async () => {
+        curve = await getCurveFromName("bn128");
+    });
 
-  after(async () => {
-    await curve.terminate();
-  });
+    after(async () => {
+        await curve.terminate();
+    });
 
-  it("should perform a basic ZKG full proving & verifying process", async () => {
-    const pol = getRandomPolynomialByLength(2**4, curve);
-    const proof = await kzg_basic_prover({ logger });
+    it("should perform a basic ZKG full proving & verifying process", async () => {
+        const pol = getRandomPolynomialByLength(2 ** 4, curve);
+        const proof = await kzg_basic_prover({ logger });
 
-    const verify = await kzg_basic_verifier(proof, { logger });
-    assert.equal(0, verify);
-  });
+        const verify = await kzg_basic_verifier(proof, { logger });
+        assert.equal(0, verify);
+    });
 });
