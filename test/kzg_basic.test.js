@@ -3,7 +3,8 @@ const { getCurveFromName } = require("ffjavascript");
 const { Polynomial } = require("../src/polynomial/polynomial.js");
 const { getRandomPolynomial } = require("./test.utils.js");
 
-const kzg_prove = require("../src/kzg_prove.js");
+const kzg_basic_prover = require("../src/kzg_basic_prover.js");
+const kzg_basic_verifier = require("../src/kzg_basic_verifier.js");
 
 const Logger = require("logplease");
 const logger = Logger.create("snarkJS", { showTimestamp: false });
@@ -22,9 +23,10 @@ describe("grand-sums-study: KZG simple test", function () {
     await curve.terminate();
   });
 
-  it("should return the correct response", async () => {
-    const pol = getRandomPolynomial(2, curve);
-    const ret = await kzg_prove("xxx", { logger });
-    assert.equal(0, ret);
+  it("should perform a basic ZKG full proving & verifying process", async () => {
+    const pol = getRandomPolynomial(3, curve);
+    const proof = await kzg_basic_prover("xxx", { logger });
+    const verify = await kzg_basic_verifier(proof, { logger });
+    assert.equal(0, verify);
   });
 });
