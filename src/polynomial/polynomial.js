@@ -17,9 +17,9 @@
     snarkjs. If not, see <https://www.gnu.org/licenses/>.
 */
 
-import {BigBuffer} from "ffjavascript";
+const {BigBuffer} = require("ffjavascript");
 
-export class Polynomial {
+module.exports.Polynomial = class Polynomial {
     constructor(coefficients, curve, logger) {
         this.coef = coefficients;
         this.curve = curve;
@@ -147,6 +147,9 @@ export class Polynomial {
         return [a1, A4];
     }
 
+    /*
+        Returns the number of coefficients stored in the buffer
+    */
     length() {
         let length = this.coef.byteLength / this.Fr.n8;
         if (length !== Math.floor(this.coef.byteLength / this.Fr.n8)) {
@@ -160,6 +163,10 @@ export class Polynomial {
         return length;
     }
 
+    /* 
+        Returns the current degree of the polynomial
+        To do that, it searches the first non zero coefficient stored in the buffer
+    */
     degree() {
         for (let i = this.length() - 1; i > 0; i--) {
             const i_n8 = i * this.Fr.n8;
@@ -296,9 +303,14 @@ export class Polynomial {
     // Multiply current polynomial by the polynomial (X - value)
     byXSubValue(value) {
         const Fr = this.Fr;
-        const resize = !Fr.eq(Fr.zero, this.getCoef(this.length() - 1));
+        // Check if the buffer needs to be resized. This will be necessary only if the highest coefficient
+        // stored in the buffer (which is stored in length -1), is already nonzero.
+        const resize = !Fr.eq(Fr.zero, this.getCoef(this.length() - 1)); 
 
+        // Calculate new length
         const length = resize ? this.length() + 1 : this.length();
+
+        // More explanation needed here
         const buff = length > 2 << 14 ? new BigBuffer(length * Fr.n8) : new Uint8Array(length * Fr.n8);
         let pol = new Polynomial(buff, this.curve, this.logger);
 
@@ -311,32 +323,94 @@ export class Polynomial {
         // Step 2: Add current polynomial to destination polynomial
         pol.add(this);
 
-        // Swap buffers
+        // Swap buffers -> Store the new polynomial coefficients
         this.coef = pol.coef;
     }
 
-    // Multiply current polynomial by the polynomial (X^n + value)
+    // Multiply current polynomial by the polynomial (X^n - value)
     byXNSubValue(n, value) {
         const Fr = this.Fr;
-        const resize = !(this.length() - n - 1 >= this.degree());
+        // Check if the buffer needs to be resized. This will be necessary only if there's not space in the 
+        // buffer to increase the degree of the polynomial by n
+        const resize = !(this.length() - 1 >= this.degree() + n);
 
+        // Calculate new length
         const length = resize ? this.length() + n : this.length();
         const buff = length > 2 << 14 ? new BigBuffer(length * Fr.n8) : new Uint8Array(length * Fr.n8);
         let pol = new Polynomial(buff, this.curve, this.logger);
 
-        // Step 0: Set current coefficients to the new buffer shifted one position
+        // Step 0: Set current coefficients to the new buffer shifted n positions
         pol.coef.set(this.coef.slice(0, (this.degree() + 1) * 32, ), n * 32);
 
-        // Step 1: multiply each coefficient by (- value)
-        this.mulScalar(value);
+        // Step 1: multiply each coefficient by (-value)
+        this.mulScalar(Fr.neg(value));
 
         // Step 2: Add current polynomial to destination polynomial
         pol.add(this);
 
-        // Swap buffers
+        // Swap buffers -> Store the new polynomial coefficients
         this.coef = pol.coef;
     }
 
+    divByZerofier(n, beta) {
+        let Fr = this.Fr;
+        const invBeta = Fr.inv(beta);
+        const invBetaNeg = Fr.neg(invBeta);
+
+        let isOne = Fr.eq(Fr.one, invBetaNeg);
+        let isNegOne = Fr.eq(Fr.negone, invBetaNeg);
+
+        if (!isOne) {
+            for (let i = 0; i < n; i++) {
+                const i_n8 = i * this.Fr.n8;
+                let element;
+
+                // If invBetaNeg === -1 we'll save a multiplication changing it by a neg function call
+                if (isNegOne) {
+                    element = Fr.neg(this.coef.slice(i_n8, i_n8 + this.Fr.n8));
+                } else {
+                    element = Fr.mul(invBetaNeg, this.coef.slice(i_n8, i_n8 + this.Fr.n8));
+                }
+
+                this.coef.set(element, i_n8);
+            }
+        }
+
+        isOne = Fr.eq(Fr.one, invBeta);
+        isNegOne = Fr.eq(Fr.negone, invBeta);
+
+        for (let i = n; i < this.length(); i++) {
+            const i_n8 = i * this.Fr.n8;
+            const i_prev_n8 = (i - n) * this.Fr.n8;
+
+            let element = this.Fr.sub(
+                this.coef.slice(i_prev_n8, i_prev_n8 + this.Fr.n8),
+                this.coef.slice(i_n8, i_n8 + this.Fr.n8)
+            );
+
+            // If invBeta === 1 we'll not do anything
+            if(!isOne) {
+                // If invBeta === -1 we'll save a multiplication changing it by a neg function call
+                if(isNegOne) {
+                    element = Fr.neg(element);
+                } else {
+                    element = Fr.mul(invBeta, element);
+                }
+            }
+
+            this.coef.set(element, i_n8);
+
+            // Check if polynomial is divisible by checking if n high coefficients are zero
+            if (i > this.length() - n - 1) {
+                if (!this.Fr.isZero(element)) {
+                    throw new Error("Polynomial is not divisible");
+                }
+            }
+        }
+
+        return this;
+    }
+    
     // Euclidean division
     divBy(polynomial) {
         const Fr = this.Fr;
@@ -366,6 +440,7 @@ export class Polynomial {
 
         let buffer = this.length() > 2 << 14 ?
             new BigBuffer(this.length() * Fr.n8) : new Uint8Array(this.length() * Fr.n8);
+
         let quotient = new Polynomial(buffer, this.curve, this.logger);
 
         let bArr = [];
@@ -595,8 +670,7 @@ export class Polynomial {
             this.coef.set(this.Fr.neg(this.coef.slice(i_n8, i_n8 + this.Fr.n8)), i_n8);
         }
 
-        const upperBound = this.coef.byteLength / this.Fr.n8;
-        for (let i = domainSize; i < upperBound; i++) {
+        for (let i = domainSize; i < domainSize * extensions; i++) {
             const i_n8 = i * this.Fr.n8;
 
             const a = this.Fr.sub(
@@ -613,86 +687,6 @@ export class Polynomial {
 
         return this;
     }
-
-    divByZerofier(n, beta) {
-        let Fr = this.Fr;
-        const invBeta = Fr.inv(beta);
-        const invBetaNeg = Fr.neg(invBeta);
-
-        let isOne = Fr.eq(Fr.one, invBetaNeg);
-        let isNegOne = Fr.eq(Fr.negone, invBetaNeg);
-
-        if (!isOne) {
-            for (let i = 0; i < n; i++) {
-                const i_n8 = i * this.Fr.n8;
-                let element;
-
-                // If invBetaNeg === -1 we'll save a multiplication changing it by a neg function call
-                if (isNegOne) {
-                    element = Fr.neg(this.coef.slice(i_n8, i_n8 + this.Fr.n8));
-                } else {
-                    element = Fr.mul(invBetaNeg, this.coef.slice(i_n8, i_n8 + this.Fr.n8));
-                }
-
-                this.coef.set(element, i_n8);
-            }
-        }
-
-        isOne = Fr.eq(Fr.one, invBeta);
-        isNegOne = Fr.eq(Fr.negone, invBeta);
-
-        for (let i = n; i < this.length(); i++) {
-            const i_n8 = i * this.Fr.n8;
-            const i_prev_n8 = (i - n) * this.Fr.n8;
-
-            let element = this.Fr.sub(
-                this.coef.slice(i_prev_n8, i_prev_n8 + this.Fr.n8),
-                this.coef.slice(i_n8, i_n8 + this.Fr.n8)
-            );
-
-            // If invBeta === 1 we'll not do anything
-            if(!isOne) {
-                // If invBeta === -1 we'll save a multiplication changing it by a neg function call
-                if(isNegOne) {
-                    element = Fr.neg(element);
-                } else {
-                    element = Fr.mul(invBeta, element);
-                }
-            }
-
-            this.coef.set(element, i_n8);
-
-            // Check if polynomial is divisible by checking if n high coefficients are zero
-            if (i > this.length() - n - 1) {
-                if (!this.Fr.isZero(element)) {
-                    throw new Error("Polynomial is not divisible");
-                }
-            }
-        }
-
-        return this;
-    }
-
-// function divideByVanishing(f, n, p) {
-//     // polynomial division f(X) / (X^n - 1) with remainder
-//     // very cheap, 0 multiplications
-//     // strategy:
-//     // start with q(X) = 0, r(X) = f(X)
-//     // then start changing q, r while preserving the identity:
-//     // f(X) = q(X) * (X^n - 1) + r(X)
-//     // in every step, move highest-degree term of r into the product
-//     // => r eventually has degree < n and we're done
-//     let q = Array(f.length).fill(0n);
-//     let r = [...f];
-//     for (let i = f.length - 1; i >= n; i--) {
-//         let leadingCoeff = r[i];
-//         if (leadingCoeff === 0n) continue;
-//         r[i] = 0n;
-//         r[i - n] = mod(r[i - n] + leadingCoeff, p);
-//         q[i - n] = mod(q[i - n] + leadingCoeff, p);
-//     }
-//     return [q, r];
-// }
 
     byX() {
         const coefs = (this.length() + 1) > 2 << 14 ?
@@ -903,17 +897,20 @@ export class Polynomial {
         return polynomial;
 
         function computeLagrangePolynomial(i) {
-            let polynomial;
+            let buff = (xArr.length) > 2 << 14 ? new BigBuffer((xArr.length) * Fr.n8) : new Uint8Array((xArr.length) * Fr.n8);
+            let polynomial = new Polynomial(buff, curve);
+            if(xArr.length === 1) {
+                polynomial.setCoef(0, Fr.one);
+            }
 
+            let first = true;
             for (let j = 0; j < xArr.length; j++) {
                 if (j === i) continue;
 
-                if (polynomial === undefined) {
-                    let buff = (xArr.length) > 2 << 14 ?
-                        new BigBuffer((xArr.length) * Fr.n8) : new Uint8Array((xArr.length) * Fr.n8);
-                    polynomial = new Polynomial(buff, curve);
+                if (first) {
                     polynomial.setCoef(0, Fr.neg(xArr[j]));
                     polynomial.setCoef(1, Fr.one);
+                    first = false;
                 } else {
                     polynomial.byXSubValue(xArr[j]);
                 }
@@ -934,6 +931,11 @@ export class Polynomial {
         let buff = (xArr.length + 1) > 2 << 14 ?
             new BigBuffer((xArr.length + 1) * Fr.n8) : new Uint8Array((xArr.length + 1) * Fr.n8);
         let polynomial = new Polynomial(buff, curve);
+
+        if(xArr.length === 0) {
+            polynomial.setCoef(0, Fr.one);
+            return polynomial;
+        }
 
         // Build a zerofier polynomial with the following form:
         // zerofier(X) = (X-xArr[0])(X-xArr[1])...(X-xArr[n])
@@ -968,9 +970,9 @@ export class Polynomial {
     }
 
     async multiExponentiation(PTau, name) {
-        const n = this.coef.byteLength / this.Fr.n8;
+        const n = this.degree() + 1;
         const PTauN = PTau.slice(0, n * this.G1.F.n8 * 2);
-        const bm = await this.Fr.batchFromMontgomery(this.coef);
+        const bm = await this.Fr.batchFromMontgomery(this.coef.slice(0, n*this.Fr.n8));
         let res = await this.G1.multiExpAffine(PTauN, bm, this.logger, name);
         res = this.G1.toAffine(res);
         return res;

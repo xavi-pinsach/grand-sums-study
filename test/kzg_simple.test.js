@@ -1,7 +1,7 @@
 const assert = require("assert");
 const { getCurveFromName } = require("ffjavascript");
-//const {Polynomial} = require("../src/polynomial/polynomial.js");
-//const { getRadomPolynomial} = require("./test.utils.js");
+const { Polynomial } = require("../src/polynomial/polynomial.js");
+const { getRandomPolynomial } = require("./test.utils.js");
 
 const kzg_prove = require("../src/kzg_prove.js");
 
@@ -15,15 +15,15 @@ describe("grand-sums-study: KZG simple test", function () {
   let curve;
 
   before(async () => {
-      curve = await getCurveFromName("bn128");
+    curve = await getCurveFromName("bn128");
   });
 
   after(async () => {
-      await curve.terminate();
+    await curve.terminate();
   });
 
   it("should return the correct response", async () => {
-//    const pol = getRadomPolynomial()
+    const pol = getRandomPolynomial(2, curve);
     const ret = await kzg_prove("xxx", { logger });
     assert.equal(0, ret);
   });
