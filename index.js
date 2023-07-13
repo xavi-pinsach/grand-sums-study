@@ -1,30 +1,31 @@
-const yargs = require('yargs')
+const yargs = require("yargs");
 
-// Customize yargs version
-yargs.version('1.1.0')
+const kzg_prove = require("./src/kzg_prove.js");
 
-// Create add command
-yargs.command({
-	command: 'add',
-	describe: 'Adds two number',
-	builder: {
-		firstNumber: {
-			describe: 'First Number',
-			demandOption: true, // Required
-			type: 'number'	
-		},
-		secondNumber: {
-			describe: 'Second Number',
-			demandOption: true,
-			type: 'number'
-		}
-	},
+const Logger = require("logplease");
+const logger = Logger.create("snarkJS", { showTimestamp: false });
+Logger.setLogLevel("INFO");
 
-	// Function for your command
-	handler(argv) {
-		console.log("Result:",
-			(argv.firstNumber+argv.secondNumber))
-	}
-})
+yargs
+  .scriptName("kzg")
+  .version("1.1.0")
+  .usage("$0 <cmd> [args]")
+  .command(
+    "prove [name]",
+    "generates a snark proof!",
+    (yargs) => {
+      yargs.positional("name", {
+        type: "string",
+        default: "Cambi",
+        describe: "the name to say hello to",
+      });
+    },
+    function (argv) {
+      return _kzg_prove(argv.name);
+    }
+  )
+  .help().argv;
 
-yargs.parse() // To set above changes
+async function _kzg_prove(name) {
+  return await kzg_prove(name, { logger });
+}
