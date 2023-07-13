@@ -2,6 +2,7 @@ const assert = require("assert");
 const { getCurveFromName } = require("ffjavascript");
 const { Polynomial } = require("../src/polynomial/polynomial.js");
 const { getRandomPolynomialByLength } = require("./test.utils.js");
+const path = require("path");
 
 const kzg_basic_prover = require("../src/kzg_basic_prover.js");
 const kzg_basic_verifier = require("../src/kzg_basic_verifier.js");
@@ -25,9 +26,11 @@ describe("grand-sums-study: KZG simple test", function () {
 
     it("should perform a basic ZKG full proving & verifying process", async () => {
         const pol = getRandomPolynomialByLength(2 ** 4, curve);
-        const proof = await kzg_basic_prover({ logger });
 
-        const verify = await kzg_basic_verifier(proof, { logger });
+        const pTauFilename = path.join("tmp", "powersOfTau28_hez_final_15.ptau");
+        const proof = await kzg_basic_prover(pol, pTauFilename, { logger });
+
+        const verify = await kzg_basic_verifier(proof, pTauFilename, { logger });
         assert.equal(0, verify);
     });
 });
