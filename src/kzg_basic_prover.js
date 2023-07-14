@@ -22,23 +22,12 @@ module.exports = async function kzg_basic_prover(pol, pTauFilename, options) {
         throw new Error("Polynomial length must be power of two.");
     }
 
-    const { fd: fdPTau, sections: pTauSections } = await readBinFile(
-        pTauFilename,
-        "ptau",
-        1,
-        1 << 22,
-        1 << 24
-    );
-    const { curve, power: nBitsPTau } = await readPTauHeader(
-        fdPTau,
-        pTauSections
-    );
+    const { fd: fdPTau, sections: pTauSections } = await readBinFile(pTauFilename, "ptau", 1, 1 << 22, 1 << 24);
+    const { curve, power: nBitsPTau } = await readPTauHeader(fdPTau, pTauSections);
 
     // Ensure the powers of Tau file is sufficiently large
     if (nBitsPTau < nBits) {
-        throw new Error(
-            "Powers of Tau has not enough values for this polynomial"
-        );
+        throw new Error("Powers of Tau has not enough values for this polynomial");
     }
 
     const sG1 = curve.G1.F.n8 * 2;
@@ -57,6 +46,8 @@ module.exports = async function kzg_basic_prover(pol, pTauFilename, options) {
 
     // STEP 1. Generate the polynomial commitment of p(X)
     logger.info("> STEP 1. Compute polynomial commitment");
+    // Convert the polynomial coefficients to Montgomery form
+    pol.coef = await curve.Fr.batchToMontgomery(pol.coef.slice(0, pol.coef.byteLength));
     proof.commitP = await pol.multiExponentiation(PTau, "pol");
     logger.info("··· [p(X)]_1 = ", curve.G1.toString(proof.commitP));
 
@@ -73,9 +64,7 @@ module.exports = async function kzg_basic_prover(pol, pTauFilename, options) {
     logger.info("··· y = ", curve.Fr.toString(proof.y));
 
     // STEP 4. Calculate the polynomial q(X) = (p(X) - p(xi)) / (X - xi)
-    logger.info(
-        "> STEP 4. Calculate the polynomial q(X) = (p(X) - p(xi)) / (X - xi)"
-    );
+    logger.info("> STEP 4. Calculate the polynomial q(X) = (p(X) - p(xi)) / (X - xi)");
     pol.subScalar(proof.evalY);
     pol.divByXSubValue(xi);
     proof.commitQ = await pol.multiExponentiation(PTau, "pol");

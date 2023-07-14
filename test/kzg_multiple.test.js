@@ -25,7 +25,7 @@ describe("grand-sums-study: KZG multiple (n polynomials) test", function () {
 
     it("should perform a basic ZKG full proving & verifying process", async () => {
         // Get a random number of polynomials to be committed between 2 and 5
-        const nPols = 1;//getRandomValue(4) + 1;
+        const nPols = getRandomValue(10) + 1;
         const pols = []
 
         for (let i=0; i<nPols; i++) {

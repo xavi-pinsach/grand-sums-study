@@ -53,7 +53,6 @@ module.exports = async function kzg_basic_verifier(
         F = curve.G1.add(F, curve.G1.timesFr(proof.commitments[i], currentAlpha));
         currentAlpha = curve.Fr.mul(currentAlpha, challenges.alpha);
     }
-    F = curve.G1.toAffine(F);
 
     // STEP 4. Compute [E]_1
     currentAlpha = curve.Fr.one;
@@ -77,7 +76,8 @@ module.exports = async function kzg_basic_verifier(
     const B1 = curve.G1.sub(F, E);
     const B2 = curve.G2.one;
 
-    const isValid = await curve.pairingEq(curve.G1.neg(A1), A2, B1, B2);
+
+    const isValid = await curve.pairingEq(A1, A2, B1, B2);
 
     if (logger) {
         if (isValid) {

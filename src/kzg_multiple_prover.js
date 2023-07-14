@@ -62,6 +62,7 @@ module.exports = async function kzg_basic_prover(pols, pTauFilename, options) {
     logger.info("> STEP 1. Compute polynomial commitments");
     proof.commitments = [];
     for(let i=0; i<pols.length; i++) {
+        pols[i].coef = await curve.Fr.batchToMontgomery(pols[i].coef.slice(0, pols[i].coef.byteLength));
         proof.commitments[i] = await pols[i].multiExponentiation(PTau, `pol${i}`);
         logger.info(`··· [p${i}(X)]_1 = `, curve.G1.toString(proof.commitments[i]));
     }
@@ -106,7 +107,7 @@ module.exports = async function kzg_basic_prover(pols, pTauFilename, options) {
         currentAlpha = curve.Fr.mul(currentAlpha, challenges.alpha);
     }
 
-    proof.commitQ = await pol.multiExponentiation(PTau, "Q");
+    proof.commitQ = await polQ.multiExponentiation(PTau, "Q");
     logger.info("··· [q(X)]_1 = ", curve.G1.toString(proof.commitQ));
 
     if (logger) {

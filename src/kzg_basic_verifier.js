@@ -14,13 +14,7 @@ module.exports = async function kzg_basic_verifier(
         logger.info("");
     }
 
-    const { fd: fdPTau, sections: pTauSections } = await readBinFile(
-        pTauFilename,
-        "ptau",
-        1,
-        1 << 22,
-        1 << 24
-    );
+    const { fd: fdPTau, sections: pTauSections } = await readBinFile(pTauFilename, "ptau", 1, 1 << 22, 1 << 24);
     const { curve } = await readPTauHeader(fdPTau, pTauSections);
 
     if (logger) {
@@ -48,7 +42,6 @@ module.exports = async function kzg_basic_verifier(
 
     const evalY_1 = curve.G1.timesFr(curve.G1.one, proof.evalY);
     const B1 = curve.G1.sub(proof.commitP, evalY_1);
-    console.log(curve.G1.toString(proof.commitP));
 
     const B2 = curve.G2.one;
 
