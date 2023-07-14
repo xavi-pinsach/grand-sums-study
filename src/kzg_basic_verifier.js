@@ -2,11 +2,7 @@ const { readBinFile } = require("@iden3/binfileutils");
 const { Keccak256Transcript } = require("./Keccak256Transcript");
 const readPTauHeader = require("./ptau_utils");
 
-module.exports = async function kzg_basic_verifier(
-    proof,
-    pTauFilename,
-    options
-) {
+module.exports = async function kzg_basic_verifier(proof, pTauFilename, options) {
     const logger = options.logger;
 
     if (logger) {
@@ -17,35 +13,67 @@ module.exports = async function kzg_basic_verifier(
     const { fd: fdPTau, sections: pTauSections } = await readBinFile(pTauFilename, "ptau", 1, 1 << 22, 1 << 24);
     const { curve } = await readPTauHeader(fdPTau, pTauSections);
 
+    const nPols = proof.commitments.length;
     if (logger) {
         logger.info("-------------------------------");
         logger.info("  KZG BASIC VERIFIER SETTINGS");
-        logger.info(`  Curve:         ${curve.name}`);
+        logger.info(`  Curve:        ${curve.name}`);
+        logger.info(`  #polynomials: ${nPols}`);
         logger.info("-------------------------------");
     }
+
+    let challenges = {};
 
     // STEP 1. Calculate challenge xi from transcript
     logger.info("> STEP 1. Compute challenge xi");
     const transcript = new Keccak256Transcript(curve);
-    transcript.addPolCommitment(proof.commitP);
-    const xi = transcript.getChallenge();
-    logger.info("··· xi = ", curve.Fr.toString(xi));
+    for (let i = 0; i < nPols; i++) {
+        transcript.addPolCommitment(proof.commitments[i]);
+    }
+    challenges.xi = transcript.getChallenge();
+    logger.info("··· xi = ", curve.Fr.toString(challenges.xi));
 
-    // STEP 2. Check the pairing equation e([q(s)]_1, [s-z]_2) = e(C-[y]_1, [1]_2)
-    logger.info("> STEP 2. Check pairing");
+    // STEP 2. Calculate challenge alpha from transcript
+    logger.info("> STEP 2. Compute challenge alpha");
+    transcript.reset();
+    for (let i = 0; i < nPols; i++) {
+        transcript.addScalar(proof.evaluations[i]);
+    }
+    challenges.alpha = transcript.getChallenge();
+    logger.info("··· alpha = ", curve.Fr.toString(challenges.alpha));
+    
+    // STEP 3. Compute [F]_1
+    let currentAlpha = curve.Fr.one;
+    let F = curve.G1.zero;
+    for(let i = 0; i < nPols; i++) {
+        F = curve.G1.add(F, curve.G1.timesFr(proof.commitments[i], currentAlpha));
+        currentAlpha = curve.Fr.mul(currentAlpha, challenges.alpha);
+    }
+
+    // STEP 4. Compute [E]_1
+    currentAlpha = curve.Fr.one;
+    let e = curve.Fr.zero;
+    for(let i = 0; i < nPols; i++) {
+        e = curve.Fr.add(e, curve.Fr.mul(proof.evaluations[i], currentAlpha));
+        currentAlpha = curve.Fr.mul(currentAlpha, challenges.alpha);
+    }
+    const E = curve.G1.timesFr(curve.G1.one, e);
+
+    // STEP 3. Check the pairing equation
+    logger.info("> STEP 3. Check pairing");
+
     const A1 = proof.commitQ;
 
     const sG2 = curve.G2.F.n8 * 2;
     const S_2 = await fdPTau.read(sG2, pTauSections[3][0].p + sG2);
-    const xi_2 = curve.G2.timesFr(curve.G2.one, xi);
+    const xi_2 = curve.G2.timesFr(curve.G2.one, challenges.xi);
     const A2 = curve.G2.sub(S_2, xi_2);
 
-    const evalY_1 = curve.G1.timesFr(curve.G1.one, proof.evalY);
-    const B1 = curve.G1.sub(proof.commitP, evalY_1);
-
+    const B1 = curve.G1.sub(F, E);
     const B2 = curve.G2.one;
 
-    const isValid = await curve.pairingEq(curve.G1.neg(A1), A2, B1, B2);
+
+    const isValid = await curve.pairingEq(A1, A2, B1, B2);
 
     if (logger) {
         if (isValid) {
@@ -62,5 +90,5 @@ module.exports = async function kzg_basic_verifier(
 
     await fdPTau.close();
 
-    return isValid === false ? -1 : 0;
+    return isValid;
 };

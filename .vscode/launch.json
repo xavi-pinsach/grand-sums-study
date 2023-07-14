@@ -15,10 +15,10 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "kzg multiple test",
+      "name": "kzg basic test",
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-      "args": ["${workspaceFolder}/test/kzg_multiple.test.js"]
+      "args": ["${workspaceFolder}/test/kzg_basic.test.js"]
     }
   ]
 }

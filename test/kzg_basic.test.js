@@ -1,6 +1,6 @@
 const assert = require("assert");
 const { getCurveFromName } = require("ffjavascript");
-const { getRandomPolynomialByLength } = require("./test.utils.js");
+const { getRandomPolynomialByLength, getRandomValue } = require("./test.utils.js");
 const path = require("path");
 
 const kzg_basic_prover = require("../src/kzg_basic_prover.js");
@@ -27,9 +27,25 @@ describe("grand-sums-study: KZG basic (1 polynomial) test", function () {
         const pol = getRandomPolynomialByLength(2 ** 4, curve);
 
         const pTauFilename = path.join("tmp", "powersOfTau28_hez_final_15.ptau");
-        const proof = await kzg_basic_prover(pol, pTauFilename, { logger });
+        const proof = await kzg_basic_prover([pol], pTauFilename, { logger });
 
-        const verify = await kzg_basic_verifier(proof, pTauFilename, { logger });
-        assert.equal(0, verify);
+        const isValid = await kzg_basic_verifier(proof, pTauFilename, { logger });
+        assert.ok(isValid);
+    });
+
+    it("should perform a basic ZKG full proving & verifying process with multiple polynomia", async () => {
+        // Get a random number of polynomials to be committed between 2 and 5
+        const nPols = getRandomValue(10) + 1;
+        const pols = []
+
+        for (let i=0; i<nPols; i++) {
+            pols[i] = getRandomPolynomialByLength(2 ** 4, curve);
+        }
+
+        const pTauFilename = path.join("tmp", "powersOfTau28_hez_final_15.ptau");
+        const proof = await kzg_basic_prover(pols, pTauFilename, { logger });
+
+        const isValid = await kzg_basic_verifier(proof, pTauFilename, { logger });
+        assert.ok(isValid);
     });
 });
