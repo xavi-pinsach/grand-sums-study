@@ -1,6 +1,5 @@
 const assert = require("assert");
 const { getCurveFromName } = require("ffjavascript");
-const { Polynomial } = require("../src/polynomial/polynomial.js");
 const { getRandomPolynomialByLength } = require("./test.utils.js");
 const path = require("path");
 
@@ -11,7 +10,7 @@ const Logger = require("logplease");
 const logger = Logger.create("", { showTimestamp: false });
 Logger.setLogLevel("INFO");
 
-describe("grand-sums-study: KZG simple test", function () {
+describe("grand-sums-study: KZG basic (1 polynomial) test", function () {
     this.timeout(500000);
 
     let curve;
@@ -24,7 +23,7 @@ describe("grand-sums-study: KZG simple test", function () {
         await curve.terminate();
     });
 
-    it("should perform a basic ZKG full proving & verifying process", async () => {
+    it("should perform a ZKG full proving & verifying process with ONE polynomial", async () => {
         const pol = getRandomPolynomialByLength(2 ** 4, curve);
 
         const pTauFilename = path.join("tmp", "powersOfTau28_hez_final_15.ptau");

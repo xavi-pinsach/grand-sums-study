@@ -11,6 +11,14 @@
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
       "args": ["${workspaceFolder}/test/kzg_basic.test.js"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "kzg multiple test",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+      "args": ["${workspaceFolder}/test/kzg_multiple.test.js"]
     }
   ]
 }

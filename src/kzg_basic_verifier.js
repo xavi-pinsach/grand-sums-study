@@ -46,8 +46,10 @@ module.exports = async function kzg_basic_verifier(
     const xi_2 = curve.G2.timesFr(curve.G2.one, xi);
     const A2 = curve.G2.sub(S_2, xi_2);
 
-    const evalY_2 = curve.G1.timesFr(curve.G1.one, proof.evalY);
-    const B1 = curve.G1.sub(proof.commitP, evalY_2);
+    const evalY_1 = curve.G1.timesFr(curve.G1.one, proof.evalY);
+    const B1 = curve.G1.sub(proof.commitP, evalY_1);
+    console.log(curve.G1.toString(proof.commitP));
+
     const B2 = curve.G2.one;
 
     const isValid = await curve.pairingEq(curve.G1.neg(A1), A2, B1, B2);
