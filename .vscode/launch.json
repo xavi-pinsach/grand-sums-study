@@ -20,5 +20,13 @@
       "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
       "args": ["${workspaceFolder}/test/kzg_GP.test.js"]
     },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "kzg grand sum test",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+      "args": ["${workspaceFolder}/test/kzg_grand_sum.test.js"]
+    },
   ]
 }

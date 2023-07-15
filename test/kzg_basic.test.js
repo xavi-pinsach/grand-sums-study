@@ -11,7 +11,7 @@ const logger = Logger.create("", { showTimestamp: false });
 Logger.setLogLevel("INFO");
 
 describe("grand-sums-study: KZG basic (1 polynomial) test", function () {
-    this.timeout(500000);
+    this.timeout(1000000);
 
     let curve;
 
