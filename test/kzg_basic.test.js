@@ -33,7 +33,7 @@ describe("grand-sums-study: KZG basic (1 polynomial) test", function () {
         assert.ok(isValid);
     });
 
-    it("should perform a basic ZKG full proving & verifying process with multiple polynomia", async () => {
+    it("should perform a basic ZKG full proving & verifying process with multiple polynomials", async () => {
         // Get a random number of polynomials to be committed between 2 and 5
         const nPols = getRandomValue(10) + 1;
         const pols = []

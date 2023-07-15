@@ -2,13 +2,15 @@ const { readBinFile } = require("@iden3/binfileutils");
 const { BigBuffer } = require("ffjavascript");
 const { Keccak256Transcript } = require("./Keccak256Transcript");
 const { Polynomial } = require("./polynomial/polynomial");
+const { Evaluations } = require("./polynomial/evaluations");
+const buildZGrandProduct = require("./grand_product");
 const readPTauHeader = require("./ptau_utils");
 
-module.exports = async function kzg_basic_prover(pols, pTauFilename, options) {
+module.exports = async function kzg_GP_prover(pols, pTauFilename, options) {
     const logger = options.logger;
 
     if (logger) {
-        logger.info("> KZG BASIC PROVER STARTED");
+        logger.info("> KZG GRAND PRODUCT PROVER STARTED");
         logger.info("");
     }
 
@@ -43,15 +45,17 @@ module.exports = async function kzg_basic_prover(pols, pTauFilename, options) {
     await fdPTau.readToBuffer(PTau, 0, domainSize * sG1, pTauSections[2][0].p);
 
     if (logger) {
-        logger.info("-------------------------------");
-        logger.info("  KZG BASIC PROVER SETTINGS");
+        logger.info("-------------------------------------");
+        logger.info("  KZG GRAND PRODUCT PROVER SETTINGS");
         logger.info(`  Curve:        ${curve.name}`);
         logger.info(`  #polynomials: ${pols.length}`);
-        logger.info("-------------------------------");
+        logger.info("-------------------------------------");
     }
 
     let proof = {};
     let challenges = {};
+
+    const transcript = new Keccak256Transcript(curve);
 
     // STEP 1. Generate the polynomial commitments of all polynomials
     logger.info("> STEP 1. Compute polynomial commitments");
@@ -62,11 +66,36 @@ module.exports = async function kzg_basic_prover(pols, pTauFilename, options) {
         logger.info(`··· [p${i}(X)]_1 = `, curve.G1.toString(proof.commitments[i]));
     }
 
-    // STEP 2. Get challenge xi from transcript
-    logger.info("> STEP 2. Get challenge xi");
-    const transcript = new Keccak256Transcript(curve);
+    // STEP 2. Generate the Z polynomial
+    logger.info("> STEP 2. Compute the Z polynomial");
     for(let i=0; i<pols.length; i++) {
         transcript.addPolCommitment(proof.commitments[i]);
+    }
+    challenges.alpha = transcript.getChallenge();
+    logger.info("··· alpha = ", curve.Fr.toString(challenges.alpha));
+
+    let polsZ = [];
+    let evaluations = {};
+    evaluations.F = await Evaluations.fromPolynomial(pols[0], 1, curve, logger);
+    evaluations.T = await Evaluations.fromPolynomial(pols[0], 1, curve, logger);
+
+    // Permute one element of the evaluations of T
+    const evaluation0 = evaluations.T.eval.slice(0, curve.Fr.n8);
+    const evaluation1 = evaluations.T.eval.slice(curve.Fr.n8, curve.Fr.n8 * 2);
+    evaluations.T.eval.set(evaluation1, 0);
+    evaluations.T.eval.set(evaluation0, curve.Fr.n8);
+
+    polsZ[0] = await buildZGrandProduct(evaluations.F, evaluations.T, challenges.alpha, curve, { logger });
+
+    proof.commitmentsZ = [];
+    proof.commitmentsZ[0] = await polsZ[0].multiExponentiation(PTau, `polZ0`);
+    logger.info(`··· [Z0(X)]_1 = `, curve.G1.toString(proof.commitmentsZ[0]));
+
+    // STEP 3. Get challenge xi from transcript
+    logger.info("> STEP 3. Get challenge xi");
+    transcript.reset();
+    for(let i=0; i<polsZ.length; i++) {
+        transcript.addPolCommitment(proof.commitmentsZ[i]);
     }
     challenges.xi = transcript.getChallenge();
     logger.info("··· xi = ", curve.Fr.toString(challenges.xi));
@@ -107,7 +136,7 @@ module.exports = async function kzg_basic_prover(pols, pTauFilename, options) {
 
     if (logger) {
         logger.info("");
-        logger.info("> KZG BASIC PROVER FINISHED");
+        logger.info("> KZG GRAND PRODUCT PROVER FINISHED");
     }
 
     await fdPTau.close();
