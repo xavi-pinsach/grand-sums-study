@@ -26,7 +26,7 @@ describe("grand-sums-study: KZG basic (1 polynomial) test", function () {
 
     it.skip("should perform a Grand Product ZKG full proving & verifying process with two polynomials", async () => {
         // Get a random number of polynomials to be committed between 2 and 5
-        pol = getRandomPolynomialByLength(2 ** 2, curve);
+        pol = getRandomPolynomialByLength(2, curve);
 
         const pTauFilename = path.join("tmp", "powersOfTau28_hez_final_15.ptau");
         const proof = await kzg_GS_prover([pol], pTauFilename, { logger });
