@@ -1,7 +1,8 @@
 const { Polynomial } = require("../src/polynomial/polynomial.js");
 
 function getRandomValue(higher = 10) {
-    return Math.floor(Math.random() * higher + 1);
+    if(higher < 1) return 1;
+    return Math.ceil(Math.random() * higher);
 }
 
 function getRandomArray(length, Fr) {

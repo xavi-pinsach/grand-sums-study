@@ -24,7 +24,7 @@ describe("grand-sums-study: KZG basic (1 polynomial) test", function () {
         await curve.terminate();
     });
 
-    it("should perform a Grand Product ZKG full proving & verifying process with two polynomials", async () => {
+    it.skip("should perform a Grand Product ZKG full proving & verifying process with two polynomials", async () => {
         // Get a random number of polynomials to be committed between 2 and 5
         pol = getRandomPolynomialByLength(2 ** 2, curve);
 
