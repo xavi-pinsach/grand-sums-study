@@ -4,7 +4,7 @@ const { getRandomPolynomialByLength, getRandomValue } = require("./test.utils.js
 const { Polynomial } = require("../src/polynomial/polynomial.js");
 const path = require("path");
 
-const kzg_GP_prover = require("../src/kzg_grand_product_prover.js");
+const kzg_GS_prover = require("../src/kzg_grandsum_prover.js");
 const kzg_basic_verifier = require("../src/kzg_basic_verifier.js");
 
 const Logger = require("logplease");
@@ -26,10 +26,10 @@ describe("grand-sums-study: KZG basic (1 polynomial) test", function () {
 
     it.skip("should perform a Grand Product ZKG full proving & verifying process with two polynomials", async () => {
         // Get a random number of polynomials to be committed between 2 and 5
-        pol = getRandomPolynomialByLength(2, curve);
+        pol = getRandomPolynomialByLength(2, curve.Fr);
 
         const pTauFilename = path.join("tmp", "powersOfTau28_hez_final_15.ptau");
-        const proof = await kzg_GP_prover([pol], pTauFilename, { logger });
+        const proof = await kzg_GS_prover([pol], pTauFilename, { logger });
 
         //const isValid = await kzg_basic_verifier(proof, pTauFilename, { logger });
         assert.ok(isValid);

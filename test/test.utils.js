@@ -21,8 +21,8 @@ function getRandomBuffer(length, Fr) {
     return buffer;
 }
 
-function getRandomPolynomialByLength(degree, curve) {
-    return new Polynomial(getRandomBuffer(2 ** degree, curve.Fr), curve);
+function getRandomPolynomialByLength(degree, Fr) {
+    return new Polynomial(getRandomBuffer(2 ** degree, Fr), curve);
 }
 
 module.exports.getRandomValue = getRandomValue;

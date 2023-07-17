@@ -2,7 +2,7 @@ const { readBinFile } = require("@iden3/binfileutils");
 const { Keccak256Transcript } = require("./Keccak256Transcript");
 const readPTauHeader = require("./ptau_utils");
 
-module.exports = async function kzg_basic_verifier(proof, pTauFilename, options) {
+module.exports = async function kzg_grandproduct_verifier(proof, pTauFilename, options) {
     const logger = options.logger;
 
     if (logger) {
@@ -15,11 +15,11 @@ module.exports = async function kzg_basic_verifier(proof, pTauFilename, options)
 
     const nPols = proof.commitments.length;
     if (logger) {
-        logger.info("-------------------------------");
-        logger.info("  KZG BASIC VERIFIER SETTINGS");
+        logger.info("---------------------------------------");
+        logger.info("  KZG GRAND PRODUCT VERIFIER SETTINGS");
         logger.info(`  Curve:        ${curve.name}`);
         logger.info(`  #polynomials: ${nPols}`);
-        logger.info("-------------------------------");
+        logger.info("---------------------------------------");
     }
 
     let challenges = {};
@@ -62,7 +62,7 @@ module.exports = async function kzg_basic_verifier(proof, pTauFilename, options)
     // STEP 3. Check the pairing equation
     logger.info("> STEP 3. Check pairing");
 
-    const A1 = proof.commitQ;
+    const A1 = proof.commitWxi
 
     const sG2 = curve.G2.F.n8 * 2;
     const S_2 = await fdPTau.read(sG2, pTauSections[3][0].p + sG2);
@@ -91,3 +91,27 @@ module.exports = async function kzg_basic_verifier(proof, pTauFilename, options)
 
     return isValid;
 };
+
+// function calculateLagrangeEvaluations(curve, challenges, vk) {
+//     const Fr = curve.Fr;
+
+//     let xin = challenges.xi;
+//     let domainSize = 1;
+//     for (let i=0; i<vk.power; i++) {
+//         xin = Fr.square(xin);
+//         domainSize *= 2;
+//     }
+//     challenges.xin = xin;
+
+//     challenges.zh = Fr.sub(xin, Fr.one);
+//     const L = [];
+
+//     const n = Fr.e(domainSize);
+//     let w = Fr.one;
+//     for (let i=1; i<=Math.max(1, vk.nPublic); i++) {
+//         L[i] = Fr.div(Fr.mul(w, challenges.zh), Fr.mul(n, Fr.sub(challenges.xi, w)));
+//         w = Fr.mul(w, Fr.w[vk.power]);
+//     }
+
+//     return L;
+// }

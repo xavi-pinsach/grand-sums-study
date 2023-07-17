@@ -25,7 +25,7 @@ describe("grand-sums-study: KZG basic (1 polynomial) test", function () {
 
     it("should perform a ZKG full proving & verifying process with ONE polynomial", async () => {
         const degree =  getRandomValue(10);
-        const pol = getRandomPolynomialByLength(degree, curve);
+        const pol = getRandomPolynomialByLength(degree, curve.Fr);
 
         const pTauFilename = path.join("tmp", "powersOfTau28_hez_final_15.ptau");
         const proof = await kzg_basic_prover([pol], pTauFilename, { logger });
@@ -42,7 +42,7 @@ describe("grand-sums-study: KZG basic (1 polynomial) test", function () {
         const pols = []
 
         for (let i=0; i<nPols; i++) {
-            pols[i] = getRandomPolynomialByLength(degree, curve);
+            pols[i] = getRandomPolynomialByLength(degree, curve.Fr);
         }
 
         const pTauFilename = path.join("tmp", "powersOfTau28_hez_final_15.ptau");

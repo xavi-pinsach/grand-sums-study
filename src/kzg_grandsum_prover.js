@@ -3,7 +3,7 @@ const { BigBuffer } = require("ffjavascript");
 const { Keccak256Transcript } = require("./Keccak256Transcript");
 const { Polynomial } = require("./polynomial/polynomial");
 const { Evaluations } = require("./polynomial/evaluations");
-const buildZGrandProduct = require("./grand_product");
+const buildZGrandSum = require("./grandsum");
 const readPTauHeader = require("./ptau_utils");
 
 module.exports = async function kzg_GP_prover(pols, pTauFilename, options) {
@@ -85,7 +85,7 @@ module.exports = async function kzg_GP_prover(pols, pTauFilename, options) {
     evaluations.T.eval.set(evaluation1, 0);
     evaluations.T.eval.set(evaluation0, curve.Fr.n8);
 
-    polsZ[0] = await buildZGrandProduct(evaluations.F, evaluations.T, challenges.alpha, curve, { logger });
+    polsZ[0] = await buildZGrandSum(evaluations.F, evaluations.T, challenges.alpha, curve, { logger });
 
     proof.commitmentsZ = [];
     proof.commitmentsZ[0] = await polsZ[0].multiExponentiation(PTau, `polZ0`);
@@ -112,7 +112,7 @@ module.exports = async function kzg_GP_prover(pols, pTauFilename, options) {
     logger.info("> STEP 4. Get challenge alpha");
     transcript.reset();
     for(let i=0; i<pols.length; i++) {
-        transcript.addScalar(proof.evaluations[i]);
+        transcript.addEvaluation(proof.evaluations[i]);
     }
     challenges.alpha = transcript.getChallenge();
     logger.info("··· alpha = ", curve.Fr.toString(challenges.alpha));

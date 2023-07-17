@@ -83,7 +83,7 @@ module.exports = async function kzg_basic_prover(pols, pTauFilename, options) {
     logger.info("> STEP 4. Get challenge alpha");
     transcript.reset();
     for(let i=0; i<pols.length; i++) {
-        transcript.addScalar(proof.evaluations[i]);
+        transcript.addEvaluation(proof.evaluations[i]);
     }
     challenges.alpha = transcript.getChallenge();
     logger.info("··· alpha = ", curve.Fr.toString(challenges.alpha));
